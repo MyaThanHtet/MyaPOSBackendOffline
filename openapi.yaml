@@ -1,0 +1,3005 @@
+openapi: 3.0.3
+info:
+  title: MyaPOS Backend API
+  version: 1.0.0
+servers:
+  - url: /api
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+      example:
+        error:
+          code: BAD_REQUEST
+          message: ownerId is required
+    SyncPullRequest:
+      type: object
+      required: [ownerId, since]
+      properties:
+        ownerId:
+          type: string
+        since:
+          type: object
+          additionalProperties:
+            type: integer
+        include_deleted:
+          type: boolean
+      example:
+        ownerId: owner_123
+        since:
+          menu_items: 1710000000000
+          expenses: 1710000000000
+          tables: 1710000000000
+        include_deleted: false
+    SyncPullResponse:
+      type: object
+      properties:
+        server_time:
+          type: integer
+        changes:
+          type: object
+      example:
+        server_time: 1710000005000
+        changes:
+          menu_items: []
+          expenses: []
+          tables: []
+    SyncPushRequest:
+      type: object
+      required: [ownerId, entries]
+      properties:
+        ownerId:
+          type: string
+        entries:
+          type: array
+          items:
+            type: object
+            required: [id, entity, entity_id, type]
+            properties:
+              id:
+                type: string
+              entity:
+                type: string
+              entity_id:
+                type: string
+              type:
+                type: string
+                enum: [upsert, delete]
+              payload:
+                type: object
+              created_at:
+                type: integer
+      example:
+        ownerId: owner_123
+        entries:
+          - id: outbox_1
+            entity: expenses
+            entity_id: 4ec890c3-a4f1-4392-aef4-95ab3236fdbc
+            type: upsert
+            payload:
+              id: 4ec890c3-a4f1-4392-aef4-95ab3236fdbc
+              title: Coffee beans
+              amount: 22.5
+              category: supplies
+              note: weekly restock
+              spentAt: 1710000000000
+              updatedAt: 1710000000000
+              ownerId: owner_123
+    SyncPushResponse:
+      type: object
+      properties:
+        applied:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              entity:
+                type: string
+              entity_id:
+                type: string
+              updated_at:
+                type: integer
+        rejected:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              reason:
+                type: string
+      example:
+        applied:
+          - id: outbox_1
+            entity: expenses
+            entity_id: 4ec890c3-a4f1-4392-aef4-95ab3236fdbc
+            updated_at: 1710000000000
+        rejected: []
+    SyncPullSingleRequest:
+      type: object
+      required: [ownerId, entity]
+      properties:
+        ownerId:
+          type: string
+        entity:
+          type: string
+        updated_since:
+          type: integer
+        include_deleted:
+          type: boolean
+      example:
+        ownerId: owner_123
+        entity: expenses
+        updated_since: 1710000000000
+        include_deleted: false
+    UserProfile:
+      type: object
+      properties:
+        uid:
+          type: string
+        email:
+          type: string
+        emailLower:
+          type: string
+        ownerEmail:
+          type: string
+        ownerId:
+          type: string
+        role:
+          type: string
+        permissions:
+          type: object
+          additionalProperties:
+            type: boolean
+        isSuperAdmin:
+          type: boolean
+        updatedAt:
+          type: integer
+      example:
+        uid: user_123
+        email: user@example.com
+        emailLower: user@example.com
+        ownerEmail: owner@example.com
+        ownerId: owner_123
+        role: user
+        permissions:
+          can_discount: true
+        isSuperAdmin: false
+        updatedAt: 1710000000000
+    Subscription:
+      type: object
+      properties:
+        isPremium:
+          type: boolean
+        expiryDate:
+          type: integer
+        planName:
+          type: string
+        updatedAt:
+          type: integer
+      example:
+        isPremium: true
+        expiryDate: 1730000000000
+        planName: Pro
+        updatedAt: 1710000000000
+    PaymentSettings:
+      type: object
+      properties:
+        companyName:
+          type: string
+        kpayPhone:
+          type: string
+        viberNumber:
+          type: string
+        telegramUsername:
+          type: string
+        price1Month:
+          type: number
+        price3Months:
+          type: number
+        price6Months:
+          type: number
+        price12Months:
+          type: number
+        updatedAt:
+          type: integer
+      example:
+        kpayPhone: "+959000000"
+        viberNumber: "+959000000"
+        telegramUsername: myapos
+        price1Month: 9.99
+        price3Months: 27.0
+        price6Months: 50.0
+        price12Months: 90.0
+        companyName: MyaPOS
+        updatedAt: 1710000000000
+    MenuItem:
+      type: object
+      required: [id, ownerId, updated_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        price:
+          type: number
+        total_sales:
+          type: number
+        image_url:
+          type: string
+        updated_at:
+          type: integer
+        is_deleted:
+          type: boolean
+        ownerId:
+          type: string
+      example:
+        id: item_1
+        name: Coffee
+        category: Drinks
+        price: 2.5
+        total_sales: 100
+        image_url: https://example.com/item.png
+        updated_at: 1710000000000
+        is_deleted: false
+        ownerId: owner_123
+    Category:
+      type: object
+      required: [id, ownerId, updated_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        updated_at:
+          type: integer
+        is_deleted:
+          type: boolean
+        ownerId:
+          type: string
+      example:
+        id: cat_1
+        name: Drinks
+        updated_at: 1710000000000
+        is_deleted: false
+        ownerId: owner_123
+    Table:
+      type: object
+      required: [id, ownerId, updated_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        capacity:
+          type: number
+        status:
+          type: string
+        pos_x:
+          type: number
+        pos_y:
+          type: number
+        table_width:
+          type: number
+        table_height:
+          type: number
+        updated_at:
+          type: integer
+        is_deleted:
+          type: boolean
+        zone_id:
+          type: string
+        ownerId:
+          type: string
+      example:
+        id: table_1
+        name: T1
+        capacity: 4
+        status: available
+        pos_x: 10
+        pos_y: 20
+        table_width: 100
+        table_height: 80
+        updated_at: 1710000000000
+        is_deleted: false
+        zone_id: zone_1
+        ownerId: owner_123
+    TableZone:
+      type: object
+      required: [id, ownerId, updated_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        updated_at:
+          type: integer
+        is_deleted:
+          type: boolean
+        ownerId:
+          type: string
+      example:
+        id: zone_1
+        name: Main
+        updated_at: 1710000000000
+        is_deleted: false
+        ownerId: owner_123
+    Bill:
+      type: object
+      required: [id, ownerId, updated_at]
+      properties:
+        id:
+          type: string
+        table_id:
+          type: string
+        subtotal:
+          type: number
+        discount_amount:
+          type: number
+        tax_amount:
+          type: number
+        table_service_charge:
+          type: number
+        table_usage_duration:
+          type: string
+        total:
+          type: number
+        status:
+          type: string
+        created_at:
+          type: integer
+        updated_at:
+          type: integer
+        ownerId:
+          type: string
+      example:
+        id: bill_1
+        table_id: table_1
+        subtotal: 10.0
+        discount_amount: 0.0
+        tax_amount: 1.0
+        table_service_charge: 2.5
+        table_usage_duration: 01:30:00
+        total: 11.0
+        status: open
+        created_at: 1710000000000
+        updated_at: 1710000000000
+        ownerId: owner_123
+    BillItem:
+      type: object
+      required: [id, ownerId, created_at, bill_id]
+      properties:
+        id:
+          type: string
+        bill_id:
+          type: string
+        menu_item_id:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        price:
+          type: number
+        quantity:
+          type: number
+        subtotal:
+          type: number
+        created_at:
+          type: integer
+        ownerId:
+          type: string
+      example:
+        id: bill_item_1
+        bill_id: bill_1
+        menu_item_id: item_1
+        name: Coffee
+        category: Drinks
+        price: 2.5
+        quantity: 2
+        subtotal: 5.0
+        created_at: 1710000000000
+        ownerId: owner_123
+    InvoiceVoid:
+      type: object
+      required: [id, ownerId, created_at, bill_id]
+      properties:
+        id:
+          type: string
+        bill_id:
+          type: string
+        reason:
+          type: string
+        created_at:
+          type: integer
+        ownerId:
+          type: string
+      example:
+        id: void_1
+        bill_id: bill_1
+        reason: Customer cancelled
+        created_at: 1710000000000
+        ownerId: owner_123
+    Payment:
+      type: object
+      required: [id, ownerId, created_at, bill_id]
+      properties:
+        id:
+          type: string
+        bill_id:
+          type: string
+        amount:
+          type: number
+        method:
+          type: string
+        created_at:
+          type: integer
+        ownerId:
+          type: string
+      example:
+        id: pay_1
+        bill_id: bill_1
+        amount: 11.0
+        method: cash
+        created_at: 1710000000000
+        ownerId: owner_123
+    PaymentMethod:
+      type: object
+      required: [id, ownerId, updated_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        icon_key:
+          type: string
+        is_active:
+          type: boolean
+        updated_at:
+          type: integer
+        is_deleted:
+          type: boolean
+        ownerId:
+          type: string
+      example:
+        id: method_1
+        name: Cash
+        icon_key: cash
+        is_active: true
+        updated_at: 1710000000000
+        is_deleted: false
+        ownerId: owner_123
+    InventoryItem:
+      type: object
+      required: [id, ownerId, updated_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        sku:
+          type: string
+        quantity:
+          type: number
+        unit:
+          type: string
+        updated_at:
+          type: integer
+        is_deleted:
+          type: boolean
+        ownerId:
+          type: string
+      example:
+        id: inv_1
+        name: Coffee Beans
+        sku: BEANS-001
+        quantity: 10
+        unit: kg
+        updated_at: 1710000000000
+        is_deleted: false
+        ownerId: owner_123
+    RecipeItem:
+      type: object
+      required: [id, ownerId, updated_at, menu_item_id, inventory_item_id]
+      properties:
+        id:
+          type: string
+        menu_item_id:
+          type: string
+        inventory_item_id:
+          type: string
+        quantity:
+          type: number
+        unit:
+          type: string
+        updated_at:
+          type: integer
+        ownerId:
+          type: string
+      example:
+        id: recipe_1
+        menu_item_id: item_1
+        inventory_item_id: inv_1
+        quantity: 0.02
+        unit: kg
+        updated_at: 1710000000000
+        ownerId: owner_123
+    InventoryWaste:
+      type: object
+      required: [id, ownerId, created_at, inventory_item_id]
+      properties:
+        id:
+          type: string
+        inventory_item_id:
+          type: string
+        quantity:
+          type: number
+        unit:
+          type: string
+        reason:
+          type: string
+        status:
+          type: string
+        void_reason:
+          type: string
+        voided_at:
+          type: integer
+        created_at:
+          type: integer
+        ownerId:
+          type: string
+      example:
+        id: waste_1
+        inventory_item_id: inv_1
+        quantity: 1
+        unit: kg
+        reason: Spoiled
+        status: voided
+        void_reason: Mistake
+        voided_at: 1710000100000
+        created_at: 1710000000000
+        ownerId: owner_123
+    InventoryDeduction:
+      type: object
+      required: [bill_id, ownerId, created_at]
+      properties:
+        bill_id:
+          type: string
+        created_at:
+          type: integer
+        ownerId:
+          type: string
+      example:
+        bill_id: bill_1
+        created_at: 1710000000000
+        ownerId: owner_123
+    PricingSetting:
+      type: object
+      required: [id, ownerId, updated_at]
+      properties:
+        id:
+          type: string
+        tax_rate:
+          type: number
+        tax_type:
+          type: string
+        table_service_charge_enabled:
+          type: boolean
+          default: false
+        table_service_rate_per_hour:
+          type: number
+          minimum: 0
+          default: 0
+        table_service_grace_period_minutes:
+          type: integer
+          minimum: 0
+          default: 0
+        table_service_minimum_charge:
+          type: number
+          minimum: 0
+          default: 0
+        updated_at:
+          type: integer
+        ownerId:
+          type: string
+      example:
+        id: pricing_1
+        tax_rate: 0.1
+        tax_type: inclusive
+        table_service_charge_enabled: true
+        table_service_rate_per_hour: 1500
+        table_service_grace_period_minutes: 10
+        table_service_minimum_charge: 500
+        updated_at: 1710000000000
+        ownerId: owner_123
+    DiscountRule:
+      type: object
+      required: [id, ownerId, updated_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        value:
+          type: number
+        is_active:
+          type: boolean
+        updated_at:
+          type: integer
+        is_deleted:
+          type: boolean
+        ownerId:
+          type: string
+      example:
+        id: disc_1
+        name: Happy Hour
+        type: percentage
+        value: 10
+        is_active: true
+        updated_at: 1710000000000
+        is_deleted: false
+        ownerId: owner_123
+    BusinessRule:
+      type: object
+      required: [id, ownerId, updated_at]
+      properties:
+        id:
+          type: string
+        auto_deduct_enabled:
+          type: boolean
+        low_stock_alerts_enabled:
+          type: boolean
+        low_stock_threshold:
+          type: number
+        waste_management_enabled:
+          type: boolean
+        updated_at:
+          type: integer
+        ownerId:
+          type: string
+      example:
+        id: rules_1
+        auto_deduct_enabled: true
+        low_stock_alerts_enabled: true
+        low_stock_threshold: 5
+        waste_management_enabled: true
+        updated_at: 1710000000000
+        ownerId: owner_123
+    DeliveryPlatform:
+      type: object
+      required: [id, ownerId, updated_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        updated_at:
+          type: integer
+        is_deleted:
+          type: boolean
+        ownerId:
+          type: string
+      example:
+        id: del_1
+        name: Grab
+        updated_at: 1710000000000
+        is_deleted: false
+        ownerId: owner_123
+    ReceiptConfig:
+      type: object
+      required: [id, ownerId, updated_at]
+      properties:
+        id:
+          type: string
+        paper_size:
+          type: string
+        header_text:
+          type: string
+        footer_text:
+          type: string
+        show_tax:
+          type: boolean
+        show_discount:
+          type: boolean
+        show_cashier:
+          type: boolean
+        logo_bytes:
+          type: string
+          description: base64
+        updated_at:
+          type: integer
+        ownerId:
+          type: string
+      example:
+        id: receipt_1
+        paper_size: 80mm
+        header_text: Welcome
+        footer_text: Thank you
+        show_tax: true
+        show_discount: true
+        show_cashier: true
+        logo_bytes: BASE64==
+        updated_at: 1710000000000
+        ownerId: owner_123
+    PrinterSetting:
+      type: object
+      required: [id, ownerId, updated_at]
+      properties:
+        id:
+          type: string
+        device_id:
+          type: string
+        device_name:
+          type: string
+        connection_type:
+          type: string
+        auto_reconnect:
+          type: boolean
+        updated_at:
+          type: integer
+        ownerId:
+          type: string
+      example:
+        id: printer_1
+        device_id: dev_1
+        device_name: Epson
+        connection_type: bluetooth
+        auto_reconnect: true
+        updated_at: 1710000000000
+        ownerId: owner_123
+    StoreProfile:
+      type: object
+      required: [id, ownerId, updated_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        address:
+          type: string
+        phone:
+          type: string
+        currency:
+          type: string
+        currency_symbol:
+          type: string
+        currency_symbol_position:
+          type: string
+        currency_decimal_places:
+          type: number
+        currency_use_grouping:
+          type: boolean
+        updated_at:
+          type: integer
+        ownerId:
+          type: string
+      example:
+        id: store_1
+        name: My Cafe
+        address: Main St
+        phone: "+959000000"
+        currency: MMK
+        currency_symbol: Ks
+        currency_symbol_position: prefix
+        currency_decimal_places: 0
+        currency_use_grouping: true
+        updated_at: 1710000000000
+        ownerId: owner_123
+    SyncSetting:
+      type: object
+      required: [id, ownerId, updated_at]
+      properties:
+        id:
+          type: string
+        is_auto_sync_enabled:
+          type: boolean
+        interval_seconds:
+          type: number
+        updated_at:
+          type: integer
+        ownerId:
+          type: string
+      example:
+        id: sync_1
+        is_auto_sync_enabled: true
+        interval_seconds: 30
+        updated_at: 1710000000000
+        ownerId: owner_123
+    StaffUser:
+      type: object
+      required: [id, ownerId, updated_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+        permissions:
+          type: string
+          description: comma-separated
+        is_active:
+          type: boolean
+        auth_uid:
+          type: string
+        updated_at:
+          type: integer
+        is_deleted:
+          type: boolean
+        ownerId:
+          type: string
+      example:
+        id: staff_1
+        name: Alice
+        email: alice@example.com
+        role: cashier
+        permissions: can_refund,can_discount
+        is_active: true
+        auth_uid: auth_123
+        updated_at: 1710000000000
+        is_deleted: false
+        ownerId: owner_123
+    Expense:
+      type: object
+      required: [id, ownerId, title, amount, category, spentAt, updatedAt, isDeleted]
+      properties:
+        id:
+          type: string
+          format: uuid
+        ownerId:
+          type: string
+        title:
+          type: string
+          maxLength: 200
+        amount:
+          type: number
+          minimum: 0
+        category:
+          type: string
+          maxLength: 80
+        note:
+          type: string
+          maxLength: 2000
+        spentAt:
+          type: integer
+          description: Epoch milliseconds
+        updatedAt:
+          type: integer
+          description: Epoch milliseconds
+        isDeleted:
+          type: boolean
+      example:
+        id: 4ec890c3-a4f1-4392-aef4-95ab3236fdbc
+        ownerId: owner_123
+        title: Coffee beans
+        amount: 22.5
+        category: supplies
+        note: weekly restock
+        spentAt: 1710000000000
+        updatedAt: 1710000005000
+        isDeleted: false
+    ExpenseSummary:
+      type: object
+      required: [totalExpense, count]
+      properties:
+        totalExpense:
+          type: number
+        count:
+          type: integer
+      example:
+        totalExpense: 120.5
+        count: 4
+security:
+  - bearerAuth: []
+paths:
+  /auth/signup:
+    post:
+      summary: Signup (creates owner)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+                  format: password
+            examples:
+              signup:
+                value:
+                  email: user@example.com
+                  password: secret123
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uid:
+                    type: string
+                  email:
+                    type: string
+                  role:
+                    type: string
+                  ownerId:
+                    type: string
+                  token:
+                    type: string
+              examples:
+                created:
+                  value:
+                    uid: user_123
+                    email: user@example.com
+                    role: owner
+                    ownerId: user_123
+                    token: jwt.token.here
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/login:
+    post:
+      summary: Login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+                  format: password
+            examples:
+              login:
+                value:
+                  email: user@example.com
+                  password: secret123
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uid:
+                    type: string
+                  email:
+                    type: string
+                  role:
+                    type: string
+                  ownerId:
+                    type: string
+                  token:
+                    type: string
+              examples:
+                ok:
+                  value:
+                    uid: user_123
+                    email: user@example.com
+                    role: owner
+                    ownerId: owner_123
+                    token: jwt.token.here
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /health:
+    get:
+      summary: Health check
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+              examples:
+                ok:
+                  value:
+                    status: ok
+  /sync/bootstrap:
+    get:
+      summary: Bulk sync bootstrap
+      parameters:
+        - in: query
+          name: ownerId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  changes:
+                    type: object
+              examples:
+                bootstrap:
+                  value:
+                    changes:
+                      menu_items: []
+                      expenses: []
+                      tables: []
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /sync/pull:
+    post:
+      summary: Bulk sync pull
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SyncPullRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncPullResponse'
+              examples:
+                pull:
+                  value:
+                    server_time: 1710000005000
+                    changes:
+                      menu_items: []
+                      expenses: []
+                      tables: []
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /sync/push:
+    post:
+      summary: Bulk sync push
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SyncPushRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncPushResponse'
+              examples:
+                push:
+                  value:
+                    applied:
+                      - id: outbox_1
+                        entity: expenses
+                        entity_id: 4ec890c3-a4f1-4392-aef4-95ab3236fdbc
+                        updated_at: 1710000000000
+                    rejected: []
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /sync/pull-single:
+    post:
+      summary: Bulk sync pull single
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SyncPullSingleRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  changes:
+                    type: array
+                    items:
+                      type: object
+  /users/me:
+    get:
+      summary: Get current user profile
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+    put:
+      summary: Upsert current user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+  /users/{uid}/subscription:
+    get:
+      summary: Get subscription
+      parameters:
+        - in: path
+          name: uid
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+  /users/clear-data:
+    delete:
+      summary: Clear all owner data (authenticated user)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ownerId:
+                    type: string
+                  cleared:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        entity:
+                          type: string
+                        model:
+                          type: string
+                        deletedCount:
+                          type: integer
+  /admin/users:
+    get:
+      summary: Super admin list users (optionally filter by ownerEmail)
+      parameters:
+        - in: query
+          name: ownerEmail
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: array
+                    items:
+                      $ref: '#/components/schemas/UserProfile'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/UserProfile'
+                      page:
+                        type: integer
+                      limit:
+                        type: integer
+                      total:
+                        type: integer
+                      totalPages:
+                        type: integer
+  /admin/users/search:
+    get:
+      summary: Super admin user search by email or uid
+      parameters:
+        - in: query
+          name: query
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: array
+                    items:
+                      $ref: '#/components/schemas/UserProfile'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/UserProfile'
+                      page:
+                        type: integer
+                      limit:
+                        type: integer
+                      total:
+                        type: integer
+                      totalPages:
+                        type: integer
+  /admin/users/emails:
+    get:
+      summary: Admin list auth user emails (optional search)
+      parameters:
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        uid:
+                          type: string
+                        email:
+                          type: string
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
+                  total:
+                    type: integer
+                  totalPages:
+                    type: integer
+  /admin/clear-data:
+    delete:
+      summary: Super admin clear all data except auth users
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cleared:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        model:
+                          type: string
+                        deletedCount:
+                          type: integer
+                  skipped:
+                    type: array
+                    items:
+                      type: string
+  /admin/users/role:
+    put:
+      summary: Super admin update auth user role
+      description: Provide either uid or email to identify the user.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                uid:
+                  type: string
+                email:
+                  type: string
+                role:
+                  type: string
+                  enum:
+                    - user
+                    - admin
+                    - super_admin
+              required:
+                - role
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uid:
+                    type: string
+                  email:
+                    type: string
+                  role:
+                    type: string
+  /admin/users/super-admin:
+    put:
+      summary: Super admin promote user to super admin
+      description: Provide either uid or email to identify the user.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                uid:
+                  type: string
+                email:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uid:
+                    type: string
+                  email:
+                    type: string
+                  role:
+                    type: string
+  /admin/users/{uid}:
+    put:
+      summary: Super admin upsert user profile
+      parameters:
+        - in: path
+          name: uid
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+  /admin/users/{uid}/subscription:
+    put:
+      summary: Admin upsert subscription
+      parameters:
+        - in: path
+          name: uid
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Subscription'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+  /admin/payment-settings:
+    get:
+      summary: Get payment settings (any authenticated user)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentSettings'
+    put:
+      summary: Update payment settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentSettings'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentSettings'
+  /menu-items:
+    get:
+      summary: List menu items
+      parameters:
+        - in: query
+          name: ownerId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: updated_since
+          schema:
+            type: integer
+        - in: query
+          name: include_deleted
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MenuItem'
+  /menu-items/{id}:
+    put:
+      summary: Upsert menu item
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MenuItem'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MenuItem'
+    delete:
+      summary: Delete menu item
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: ownerId
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /categories:
+    get:
+      summary: List categories
+      parameters:
+        - in: query
+          name: ownerId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: updated_since
+          schema:
+            type: integer
+        - in: query
+          name: include_deleted
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+  /categories/{id}:
+    put:
+      summary: Upsert category
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Category'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+    delete:
+      summary: Delete category
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: ownerId
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /tables:
+    get:
+      summary: List tables
+      parameters:
+        - in: query
+          name: ownerId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: updated_since
+          schema:
+            type: integer
+        - in: query
+          name: include_deleted
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Table'
+  /tables/{id}:
+    put:
+      summary: Upsert table
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Table'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Table'
+    delete:
+      summary: Delete table
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: ownerId
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /tables/move:
+    post:
+      summary: Move table (atomic)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [bill, source_table, target_table]
+              properties:
+                bill:
+                  $ref: '#/components/schemas/Bill'
+                source_table:
+                  $ref: '#/components/schemas/Table'
+                target_table:
+                  $ref: '#/components/schemas/Table'
+      responses:
+        '200':
+          description: OK
+  /table-zones:
+    get:
+      summary: List table zones
+      parameters:
+        - in: query
+          name: ownerId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: updated_since
+          schema:
+            type: integer
+        - in: query
+          name: include_deleted
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TableZone'
+  /table-zones/{id}:
+    put:
+      summary: Upsert table zone
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TableZone'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableZone'
+    delete:
+      summary: Delete table zone
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: ownerId
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /bills:
+    get:
+      summary: List bills
+      parameters:
+        - in: query
+          name: ownerId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: updated_since
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Bill'
+  /bills/{id}:
+    put:
+      summary: Upsert bill
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Bill'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bill'
+    delete:
+      summary: Delete bill
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: ownerId
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /bill-items:
+    get:
+      summary: List bill items
+      parameters:
+        - in: query
+          name: ownerId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: updated_since
+          schema:
+            type: integer
+        - in: query
+          name: bill_id
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BillItem'
+  /bill-items/{id}:
+    put:
+      summary: Upsert bill item
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BillItem'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BillItem'
+    delete:
+      summary: Delete bill item
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: ownerId
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /invoice-voids:
+    get:
+      summary: List invoice voids
+      parameters:
+        - in: query
+          name: ownerId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: updated_since
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InvoiceVoid'
+  /invoice-voids/{id}:
+    put:
+      summary: Upsert invoice void
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvoiceVoid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceVoid'
+    delete:
+      summary: Delete invoice void
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: ownerId
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /payments:
+    get:
+      summary: List payments
+      parameters:
+        - in: query
+          name: ownerId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: updated_since
+          schema:
+            type: integer
+        - in: query
+          name: bill_id
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Payment'
+  /payments/{id}:
+    put:
+      summary: Upsert payment
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Payment'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+    delete:
+      summary: Delete payment
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: ownerId
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /payment-methods:
+    get:
+      summary: List payment methods
+      parameters:
+        - in: query
+          name: ownerId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: updated_since
+          schema:
+            type: integer
+        - in: query
+          name: include_deleted
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PaymentMethod'
+  /payment-methods/{id}:
+    put:
+      summary: Upsert payment method
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentMethod'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentMethod'
+    delete:
+      summary: Delete payment method
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: ownerId
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /inventory-items:
+    get:
+      summary: List inventory items
+      parameters:
+        - in: query
+          name: ownerId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: updated_since
+          schema:
+            type: integer
+        - in: query
+          name: include_deleted
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InventoryItem'
+  /inventory-items/{id}:
+    put:
+      summary: Upsert inventory item
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryItem'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryItem'
+    delete:
+      summary: Delete inventory item
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: ownerId
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /recipe-items:
+    get:
+      summary: List recipe items
+      parameters:
+        - in: query
+          name: ownerId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: updated_since
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecipeItem'
+  /recipe-items/{id}:
+    put:
+      summary: Upsert recipe item
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeItem'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeItem'
+    delete:
+      summary: Delete recipe item
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: ownerId
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /inventory-waste:
+    get:
+      summary: List inventory waste
+      parameters:
+        - in: query
+          name: ownerId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: updated_since
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InventoryWaste'
+  /inventory-waste/{id}:
+    put:
+      summary: Upsert inventory waste
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryWaste'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryWaste'
+    delete:
+      summary: Delete inventory waste
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: ownerId
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /inventory-deductions:
+    get:
+      summary: List inventory deductions
+      parameters:
+        - in: query
+          name: ownerId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: updated_since
+          schema:
+            type: integer
+        - in: query
+          name: bill_id
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InventoryDeduction'
+  /inventory-deductions/{bill_id}:
+    put:
+      summary: Upsert inventory deduction
+      parameters:
+        - in: path
+          name: bill_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryDeduction'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryDeduction'
+    delete:
+      summary: Delete inventory deduction
+      parameters:
+        - in: path
+          name: bill_id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: ownerId
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /pricing-settings:
+    get:
+      summary: List pricing settings
+      parameters:
+        - in: query
+          name: ownerId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: updated_since
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PricingSetting'
+              examples:
+                pricingSettings:
+                  value:
+                    - id: pricing_1
+                      tax_rate: 0.1
+                      tax_type: inclusive
+                      table_service_charge_enabled: true
+                      table_service_rate_per_hour: 1500
+                      table_service_grace_period_minutes: 10
+                      table_service_minimum_charge: 500
+                      updated_at: 1710000000000
+                      ownerId: owner_123
+  /pricing-settings/{id}:
+    put:
+      summary: Upsert pricing settings
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PricingSetting'
+            examples:
+              upsertPricingSettings:
+                value:
+                  id: pricing_1
+                  tax_rate: 0.1
+                  tax_type: inclusive
+                  table_service_charge_enabled: true
+                  table_service_rate_per_hour: 1500
+                  table_service_grace_period_minutes: 10
+                  table_service_minimum_charge: 500
+                  updated_at: 1710000000000
+                  ownerId: owner_123
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PricingSetting'
+              examples:
+                pricingSettings:
+                  value:
+                    id: pricing_1
+                    tax_rate: 0.1
+                    tax_type: inclusive
+                    table_service_charge_enabled: true
+                    table_service_rate_per_hour: 1500
+                    table_service_grace_period_minutes: 10
+                    table_service_minimum_charge: 500
+                    updated_at: 1710000000000
+                    ownerId: owner_123
+  /discount-rules:
+    get:
+      summary: List discount rules
+      parameters:
+        - in: query
+          name: ownerId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: updated_since
+          schema:
+            type: integer
+        - in: query
+          name: include_deleted
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DiscountRule'
+  /discount-rules/{id}:
+    put:
+      summary: Upsert discount rule
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DiscountRule'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscountRule'
+    delete:
+      summary: Delete discount rule
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: ownerId
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /business-rules:
+    get:
+      summary: List business rules
+      parameters:
+        - in: query
+          name: ownerId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: updated_since
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BusinessRule'
+  /business-rules/{id}:
+    put:
+      summary: Upsert business rule
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BusinessRule'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessRule'
+  /delivery-platforms:
+    get:
+      summary: List delivery platforms
+      parameters:
+        - in: query
+          name: ownerId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: updated_since
+          schema:
+            type: integer
+        - in: query
+          name: include_deleted
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DeliveryPlatform'
+  /delivery-platforms/{id}:
+    put:
+      summary: Upsert delivery platform
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliveryPlatform'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryPlatform'
+    delete:
+      summary: Delete delivery platform
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: ownerId
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /receipt-config:
+    get:
+      summary: Get receipt config
+      parameters:
+        - in: query
+          name: ownerId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: updated_since
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReceiptConfig'
+  /receipt-config/{id}:
+    put:
+      summary: Upsert receipt config
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceiptConfig'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptConfig'
+  /printer-settings:
+    get:
+      summary: Get printer settings
+      parameters:
+        - in: query
+          name: ownerId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: updated_since
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PrinterSetting'
+  /printer-settings/{id}:
+    put:
+      summary: Upsert printer settings
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrinterSetting'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrinterSetting'
+  /store-profile:
+    get:
+      summary: Get store profile
+      parameters:
+        - in: query
+          name: ownerId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: updated_since
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StoreProfile'
+  /store-profile/{id}:
+    put:
+      summary: Upsert store profile
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoreProfile'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoreProfile'
+  /sync-settings:
+    get:
+      summary: Get sync settings
+      parameters:
+        - in: query
+          name: ownerId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: updated_since
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SyncSetting'
+  /sync-settings/{id}:
+    put:
+      summary: Upsert sync settings
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SyncSetting'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncSetting'
+  /staff-users:
+    get:
+      summary: List staff users
+      parameters:
+        - in: query
+          name: ownerId
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: updated_since
+          schema:
+            type: integer
+        - in: query
+          name: include_deleted
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StaffUser'
+    post:
+      summary: Create staff auth account (owner or manager)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+                role:
+                  type: string
+                  enum:
+                    - manager
+                    - cashier
+                name:
+                  type: string
+                permissions:
+                  type: string
+              required:
+                - email
+                - password
+                - role
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uid:
+                    type: string
+                  email:
+                    type: string
+                  role:
+                    type: string
+                  ownerId:
+                    type: string
+  /staff-users/{id}:
+    put:
+      summary: Upsert staff user
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffUser'
+      responses:
+        '200':
+          description: OK
+  /expenses:
+    get:
+      summary: List expenses
+      parameters:
+        - in: query
+          name: ownerId
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: from
+          schema:
+            type: integer
+        - in: query
+          name: to
+          schema:
+            type: integer
+        - in: query
+          name: category
+          schema:
+            type: string
+        - in: query
+          name: includeDeleted
+          schema:
+            type: boolean
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Expense'
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
+                  total:
+                    type: integer
+                  totalPages:
+                    type: integer
+    post:
+      summary: Create expense
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Expense'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+  /expenses/summary:
+    get:
+      summary: Expense summary
+      parameters:
+        - in: query
+          name: ownerId
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: from
+          schema:
+            type: integer
+        - in: query
+          name: to
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpenseSummary'
+  /expenses/{id}:
+    put:
+      summary: Upsert expense
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Expense'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+    delete:
+      summary: Soft delete expense
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                updatedAt:
+                  type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffUser'
+    delete:
+      summary: Delete staff user
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: ownerId
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
