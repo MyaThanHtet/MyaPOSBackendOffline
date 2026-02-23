@@ -8,23 +8,93 @@ Node.js REST API for a POS system using Express and SQLite.
 2. Install dependencies: `npm install`
 3. Run in dev mode: `npm run dev`
 
-## Windows one-click setup
+## Portable Windows installation guide (Backend + Frontend public folder)
 
-Use this if users should run the server without opening an IDE/project.
+Use this when you want to run from a copied folder or USB without installing Node.js globally.
 
-1. Copy this backend folder to the Windows laptop.
-2. Install Node.js 18+ once.
-3. Double-click `windows\install.bat` (first-time setup).
-4. Edit `.env` and set `JWT_SECRET`.
-5. Optional: set `FRONTEND_BUILD_DIR` in `.env` to your frontend `build/web` folder.
-6. Double-click one of these:
-   - `windows\start-server.bat` (backend only)
-   - `windows\start-pos.bat` (start backend and open browser at `http://localhost:3000`)
+### 1. Prepare folder structure
 
-Notes:
-- If `FRONTEND_BUILD_DIR` points to a valid `build/web` folder, backend will serve it at `/`.
-- Keep API base URL as `http://localhost:3000/api`.
-- For desktop convenience, create a shortcut to `windows\start-pos.bat`.
+Project root should include:
+
+- `node-bin\` (from Node.js Windows ZIP, including `node.exe` and `npm.cmd`)
+- `windows\start-pos.bat`
+- `windows\run-silent.vbs`
+- `src\` (backend source)
+- `public\` (frontend web build files)
+
+Example:
+
+```text
+MyaPOSBackendOffline/
+  node-bin/
+    node.exe
+    npm.cmd
+    ...
+  public/
+    index.html
+    manifest.json
+    flutter_service_worker.js (if Flutter web)
+    assets/
+  windows/
+    start-pos.bat
+    run-silent.vbs
+  src/
+  package.json
+  .env
+```
+
+### 2. Put frontend build into `public`
+
+Copy your frontend production build files into `public\`.
+
+- If your build output is `build\web\*`, copy all contents of that folder into `public\`.
+- Ensure `public\index.html` exists.
+
+### 3. Configure environment
+
+Create `.env` from `.env.example` (if needed), then set:
+
+- `JWT_SECRET=your_secret_here`
+- `PORT=3000` (or your preferred port)
+- `FRONTEND_BUILD_DIR=./public`
+
+`FRONTEND_BUILD_DIR=./public` makes the backend serve your frontend at `http://localhost:3000/`.
+
+### 4. First run (installs dependencies using local node-bin)
+
+Run:
+
+- `windows\start-pos.bat`
+
+What it does:
+
+- Uses `.\node-bin\node.exe` and `.\node-bin\npm.cmd`
+- Installs dependencies if `node_modules` is missing or incompatible
+- Starts backend server only (does not open browser)
+
+### 5. Run backend silently (no visible terminal)
+
+Run:
+
+- `windows\run-silent.vbs`
+
+This launches `start-pos.bat` hidden in the background.
+
+### 6. Auto-start backend when Windows boots
+
+1. Press `Win + R`
+2. Type `shell:startup`
+3. Press Enter
+4. In the opened Startup folder, create a shortcut to:
+   - `...\MyaPOSBackendOffline\windows\run-silent.vbs`
+5. Restart Windows and verify backend is running.
+
+### 7. Verify server
+
+- API health: `http://localhost:3000/api/health`
+- Frontend: `http://localhost:3000/`
+
+Keep frontend API base URL as `http://localhost:3000/api`.
 
 ## Structure
 
