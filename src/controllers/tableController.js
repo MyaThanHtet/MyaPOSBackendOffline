@@ -1,6 +1,13 @@
-const mongoose = require('mongoose');
 const { Bill, Table } = require('../models');
-const { badRequest, notFound } = require('../utils/errors');
+const resourceRepository = require('../repositories/resourceRepository');
+const { badRequest, forbidden } = require('../utils/errors');
+const { resolveOwnerScope } = require('../utils/ownerScope');
+
+const assertScopedOwner = (scopedOwnerId, value, field) => {
+  if (String(value) !== String(scopedOwnerId)) {
+    throw forbidden(`${field}.ownerId does not match scope`);
+  }
+};
 
 const moveTable = async (req, res, next) => {
   const { bill, source_table, target_table } = req.body || {};
@@ -13,42 +20,32 @@ const moveTable = async (req, res, next) => {
     return next(badRequest('ownerId is required for bill, source_table, and target_table'));
   }
 
-  const session = await mongoose.startSession();
+  if (!bill.id || !source_table.id || !target_table.id) {
+    return next(badRequest('id is required for bill, source_table, and target_table'));
+  }
 
   try {
-    let updatedBill;
-    let updatedSource;
-    let updatedTarget;
+    const scopedOwnerId = resolveOwnerScope({ user: req.user, requestedOwnerId: bill.ownerId });
+    assertScopedOwner(scopedOwnerId, source_table.ownerId, 'source_table');
+    assertScopedOwner(scopedOwnerId, target_table.ownerId, 'target_table');
 
-    await session.withTransaction(async () => {
-      updatedBill = await Bill.findOneAndUpdate({ id: bill.id, ownerId: bill.ownerId }, bill, {
-        new: true,
-        upsert: true,
-        session
-      });
-      if (!updatedBill) {
-        throw notFound('Bill not found');
-      }
+    const updatedBill = await resourceRepository.upsert(
+      Bill,
+      { id: bill.id, ownerId: scopedOwnerId },
+      { ...bill, ownerId: scopedOwnerId }
+    );
 
-      updatedSource = await Table.findOneAndUpdate(
-        { id: source_table.id, ownerId: source_table.ownerId },
-        source_table,
-        {
-          new: true,
-          upsert: true,
-          session
-        }
-      );
-      updatedTarget = await Table.findOneAndUpdate(
-        { id: target_table.id, ownerId: target_table.ownerId },
-        target_table,
-        {
-          new: true,
-          upsert: true,
-          session
-        }
-      );
-    });
+    const updatedSource = await resourceRepository.upsert(
+      Table,
+      { id: source_table.id, ownerId: scopedOwnerId },
+      { ...source_table, ownerId: scopedOwnerId }
+    );
+
+    const updatedTarget = await resourceRepository.upsert(
+      Table,
+      { id: target_table.id, ownerId: scopedOwnerId },
+      { ...target_table, ownerId: scopedOwnerId }
+    );
 
     res.json({
       bill: updatedBill,
@@ -57,8 +54,6 @@ const moveTable = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
-  } finally {
-    session.endSession();
   }
 };
 

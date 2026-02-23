@@ -3,7 +3,7 @@ const dotenv = require('dotenv');
 // Load environment variables from .env if present
 dotenv.config();
 
-const required = ['PORT', 'MONGO_URI', 'JWT_SECRET'];
+const required = ['JWT_SECRET'];
 const missing = required.filter((key) => !process.env[key]);
 
 if (missing.length > 0) {
@@ -13,6 +13,7 @@ if (missing.length > 0) {
 
 module.exports = {
   port: Number(process.env.PORT) || 3000,
-  mongoUri: process.env.MONGO_URI,
-  jwtSecret: process.env.JWT_SECRET
+  jwtSecret: process.env.JWT_SECRET,
+  sqlitePath: process.env.SQLITE_PATH || './data/myapos.sqlite',
+  frontendBuildDir: process.env.FRONTEND_BUILD_DIR || ''
 };

@@ -4,6 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const authRepository = require('../repositories/authRepository');
 const userProfileRepository = require('../repositories/userProfileRepository');
 const models = require('../models');
+const resourceRepository = require('../repositories/resourceRepository');
 const { badRequest, unauthorized } = require('../utils/errors');
 const { jwtSecret } = require('../config/env');
 
@@ -140,7 +141,7 @@ const createStaff = async (creator, body) => {
 
   const email = body.email && String(body.email).trim();
   const password = body.password && String(body.password);
-  const role = body.role && String(body.role).trim();
+  const role = body.role ? String(body.role).trim() : 'cashier';
   const name = body.name && String(body.name).trim();
   const permissions = body.permissions;
 
@@ -155,7 +156,7 @@ const createStaff = async (creator, body) => {
   }
 
   const allowedRoles = new Set(['manager', 'cashier']);
-  if (!role || !allowedRoles.has(role)) {
+  if (!allowedRoles.has(role)) {
     throw badRequest('role must be one of: manager, cashier');
   }
 
@@ -174,17 +175,22 @@ const createStaff = async (creator, body) => {
 
   if (models?.StaffUser) {
     const now = Date.now();
-    await models.StaffUser.create({
-      id: uuidv4(),
-      name: name || email,
-      email,
-      role,
-      permissions,
-      is_active: true,
-      auth_uid: authUser.uid,
-      updated_at: now,
-      ownerId: creator.ownerId
-    });
+    const staffId = uuidv4();
+    await resourceRepository.upsert(
+      models.StaffUser,
+      { id: staffId, ownerId: creator.ownerId },
+      {
+        id: staffId,
+        name: name || email,
+        email,
+        role,
+        permissions,
+        is_active: true,
+        auth_uid: authUser.uid,
+        updated_at: now,
+        ownerId: creator.ownerId
+      }
+    );
   }
 
   return {

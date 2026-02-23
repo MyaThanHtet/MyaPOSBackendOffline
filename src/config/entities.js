@@ -213,6 +213,12 @@ const entityConfigs = {
         data.logo_bytes = Buffer.from(data.logo_bytes, 'base64');
       }
       return data;
+    },
+    transformOutput: (doc) => {
+      if (doc?.logo_bytes && Buffer.isBuffer(doc.logo_bytes)) {
+        return { ...doc, logo_bytes: doc.logo_bytes.toString('base64') };
+      }
+      return doc;
     }
   },
   printer_settings: {

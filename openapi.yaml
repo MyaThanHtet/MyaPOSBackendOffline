@@ -4,6 +4,7 @@ info:
   version: 1.0.0
 servers:
   - url: /api
+    description: Main API base
 components:
   securitySchemes:
     bearerAuth:
@@ -25,6 +26,278 @@ components:
         error:
           code: BAD_REQUEST
           message: ownerId is required
+    AuthRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+          format: password
+      example:
+        email: user@example.com
+        password: secret123
+    AuthResponse:
+      type: object
+      required: [uid, token, email, role]
+      properties:
+        uid:
+          type: string
+        token:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+        ownerId:
+          type: string
+        owner_id:
+          type: string
+      example:
+        uid: user_123
+        token: jwt.token.here
+        email: user@example.com
+        role: owner
+        ownerId: user_123
+    UpdateMeRequest:
+      type: object
+      required: [uid, email, emailLower, updatedAt]
+      properties:
+        uid:
+          type: string
+        email:
+          type: string
+        emailLower:
+          type: string
+        ownerEmail:
+          type: string
+        ownerId:
+          type: string
+        role:
+          type: string
+        permissions:
+          type: object
+          additionalProperties: true
+        isSuperAdmin:
+          type: boolean
+        updatedAt:
+          type: integer
+      example:
+        uid: user_123
+        email: user@example.com
+        emailLower: user@example.com
+        updatedAt: 1710000000000
+    PaginatedUsersResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserProfile'
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        totalPages:
+          type: integer
+      example:
+        items: []
+        page: 1
+        limit: 50
+        total: 0
+        totalPages: 0
+    StaffCreateRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+        role:
+          type: string
+          enum: [manager, cashier]
+        name:
+          type: string
+        permissions:
+          oneOf:
+            - type: string
+            - type: object
+              additionalProperties: true
+    StaffCreateResponse:
+      oneOf:
+        - type: object
+          properties:
+            uid:
+              type: string
+            email:
+              type: string
+            role:
+              type: string
+            ownerId:
+              type: string
+        - type: object
+          properties:
+            user:
+              type: object
+              properties:
+                uid:
+                  type: string
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                uid:
+                  type: string
+      example:
+        uid: user_123
+        email: staff@example.com
+        role: cashier
+        ownerId: owner_123
+    ClearOwnerDataResponse:
+      type: object
+      properties:
+        ownerId:
+          type: string
+        cleared:
+          type: array
+          items:
+            type: object
+            properties:
+              entity:
+                type: string
+              table:
+                type: string
+              deletedCount:
+                type: integer
+    ClearAllDataResponse:
+      type: object
+      properties:
+        cleared:
+          type: array
+          items:
+            type: object
+            properties:
+              table:
+                type: string
+              deletedCount:
+                type: integer
+        skipped:
+          type: array
+          items:
+            type: string
+    TableMoveRequest:
+      type: object
+      required: [bill, source_table, target_table]
+      properties:
+        bill:
+          $ref: '#/components/schemas/Bill'
+        source_table:
+          $ref: '#/components/schemas/Table'
+        target_table:
+          $ref: '#/components/schemas/Table'
+    TableMoveResponse:
+      type: object
+      properties:
+        bill:
+          $ref: '#/components/schemas/Bill'
+        source_table:
+          $ref: '#/components/schemas/Table'
+        target_table:
+          $ref: '#/components/schemas/Table'
+    DeleteExpenseResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        deleted:
+          type: boolean
+        resource:
+          $ref: '#/components/schemas/Expense'
+    DbTableWriteResponse:
+      oneOf:
+        - type: number
+        - type: object
+          properties:
+            changes:
+              type: integer
+            affectedRows:
+              type: integer
+            count:
+              type: integer
+            id:
+              type: integer
+    DbTableReadResponse:
+      oneOf:
+        - type: array
+          items:
+            type: object
+            additionalProperties: true
+        - type: object
+          properties:
+            rows:
+              type: array
+              items:
+                type: object
+                additionalProperties: true
+            items:
+              type: array
+              items:
+                type: object
+                additionalProperties: true
+            data:
+              type: array
+              items:
+                type: object
+                additionalProperties: true
+    DbInsertRequest:
+      type: object
+      properties:
+        values:
+          type: object
+          additionalProperties: true
+        nullColumnHack:
+          type: string
+        conflictAlgorithm:
+          type: string
+          enum: [rollback, abort, fail, ignore, replace]
+    DbUpdateRequest:
+      type: object
+      required: [values]
+      properties:
+        values:
+          type: object
+          additionalProperties: true
+        where:
+          type: string
+        whereArgs:
+          type: array
+          items: {}
+        conflictAlgorithm:
+          type: string
+          enum: [rollback, abort, fail, ignore, replace]
+    DbDeleteRequest:
+      type: object
+      properties:
+        where:
+          type: string
+        whereArgs:
+          type: array
+          items: {}
+    DbRawRequest:
+      type: object
+      required: [sql]
+      properties:
+        sql:
+          type: string
+        arguments:
+          type: array
+          items: {}
     SyncPullRequest:
       type: object
       required: [ownerId, since]
@@ -899,6 +1172,33 @@ components:
         spentAt: 1710000000000
         updatedAt: 1710000005000
         isDeleted: false
+    ExpenseWriteRequest:
+      type: object
+      required: [title, amount, category, spentAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        ownerId:
+          type: string
+        title:
+          type: string
+          maxLength: 200
+        amount:
+          type: number
+          minimum: 0
+        category:
+          type: string
+          maxLength: 80
+        note:
+          type: string
+          maxLength: 2000
+        spentAt:
+          type: integer
+        updatedAt:
+          type: integer
+        isDeleted:
+          type: boolean
     ExpenseSummary:
       type: object
       required: [totalExpense, count]
@@ -913,6 +1213,321 @@ components:
 security:
   - bearerAuth: []
 paths:
+  /db/{table}:
+    servers:
+      - url: /
+        description: Direct DB adapter base
+      - url: /api
+        description: API-prefixed DB adapter fallback
+    get:
+      summary: Query rows from a table
+      security: []
+      parameters:
+        - in: path
+          name: table
+          required: true
+          schema:
+            type: string
+            enum:
+              - menu_items
+              - tables
+              - table_zones
+              - inventory_items
+              - bills
+              - payments
+              - categories
+              - delivery_platforms
+              - bill_items
+              - recipe_items
+              - inventory_waste
+              - pricing_settings
+              - discount_rules
+              - payment_methods
+              - invoice_voids
+              - inventory_deductions
+              - business_rules
+              - receipt_config
+              - printer_settings
+              - store_profile
+              - staff_users
+              - sync_settings
+              - expenses
+              - outbox
+        - in: query
+          name: distinct
+          schema:
+            type: boolean
+        - in: query
+          name: columns
+          schema:
+            type: string
+          description: Comma-separated column names
+        - in: query
+          name: where
+          schema:
+            type: string
+          description: SQL predicate using ? placeholders
+        - in: query
+          name: whereArgs
+          schema:
+            type: string
+          description: JSON array string for where placeholders
+        - in: query
+          name: groupBy
+          schema:
+            type: string
+        - in: query
+          name: having
+          schema:
+            type: string
+        - in: query
+          name: orderBy
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: offset
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Query result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DbTableReadResponse'
+    post:
+      summary: Insert row into a table
+      security: []
+      parameters:
+        - in: path
+          name: table
+          required: true
+          schema:
+            type: string
+            enum:
+              - menu_items
+              - tables
+              - table_zones
+              - inventory_items
+              - bills
+              - payments
+              - categories
+              - delivery_platforms
+              - bill_items
+              - recipe_items
+              - inventory_waste
+              - pricing_settings
+              - discount_rules
+              - payment_methods
+              - invoice_voids
+              - inventory_deductions
+              - business_rules
+              - receipt_config
+              - printer_settings
+              - store_profile
+              - staff_users
+              - sync_settings
+              - expenses
+              - outbox
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DbInsertRequest'
+      responses:
+        '200':
+          description: Insert result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DbTableWriteResponse'
+    put:
+      summary: Update rows in a table
+      security: []
+      parameters:
+        - in: path
+          name: table
+          required: true
+          schema:
+            type: string
+            enum:
+              - menu_items
+              - tables
+              - table_zones
+              - inventory_items
+              - bills
+              - payments
+              - categories
+              - delivery_platforms
+              - bill_items
+              - recipe_items
+              - inventory_waste
+              - pricing_settings
+              - discount_rules
+              - payment_methods
+              - invoice_voids
+              - inventory_deductions
+              - business_rules
+              - receipt_config
+              - printer_settings
+              - store_profile
+              - staff_users
+              - sync_settings
+              - expenses
+              - outbox
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DbUpdateRequest'
+      responses:
+        '200':
+          description: Update result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DbTableWriteResponse'
+    delete:
+      summary: Delete rows from a table
+      security: []
+      parameters:
+        - in: path
+          name: table
+          required: true
+          schema:
+            type: string
+            enum:
+              - menu_items
+              - tables
+              - table_zones
+              - inventory_items
+              - bills
+              - payments
+              - categories
+              - delivery_platforms
+              - bill_items
+              - recipe_items
+              - inventory_waste
+              - pricing_settings
+              - discount_rules
+              - payment_methods
+              - invoice_voids
+              - inventory_deductions
+              - business_rules
+              - receipt_config
+              - printer_settings
+              - store_profile
+              - staff_users
+              - sync_settings
+              - expenses
+              - outbox
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DbDeleteRequest'
+      responses:
+        '200':
+          description: Delete result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DbTableWriteResponse'
+  /db/raw-query:
+    servers:
+      - url: /
+        description: Direct DB adapter base
+      - url: /api
+        description: API-prefixed DB adapter fallback
+    post:
+      summary: Execute a raw SQL select query
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DbRawRequest'
+      responses:
+        '200':
+          description: Query result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DbTableReadResponse'
+  /db/raw-update:
+    servers:
+      - url: /
+        description: Direct DB adapter base
+      - url: /api
+        description: API-prefixed DB adapter fallback
+    post:
+      summary: Execute a raw SQL update statement
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DbRawRequest'
+      responses:
+        '200':
+          description: Update result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DbTableWriteResponse'
+  /db/raw-delete:
+    servers:
+      - url: /
+        description: Direct DB adapter base
+      - url: /api
+        description: API-prefixed DB adapter fallback
+    post:
+      summary: Execute a raw SQL delete statement
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DbRawRequest'
+      responses:
+        '200':
+          description: Delete result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DbTableWriteResponse'
+  /db/execute:
+    servers:
+      - url: /
+        description: Direct DB adapter base
+      - url: /api
+        description: API-prefixed DB adapter fallback
+    post:
+      summary: Execute a raw SQL statement
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DbRawRequest'
+      responses:
+        '200':
+          description: Execution result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DbTableWriteResponse'
   /auth/signup:
     post:
       summary: Signup (creates owner)
@@ -922,14 +1537,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required: [email, password]
-              properties:
-                email:
-                  type: string
-                password:
-                  type: string
-                  format: password
+              $ref: '#/components/schemas/AuthRequest'
             examples:
               signup:
                 value:
@@ -941,18 +1549,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  uid:
-                    type: string
-                  email:
-                    type: string
-                  role:
-                    type: string
-                  ownerId:
-                    type: string
-                  token:
-                    type: string
+                $ref: '#/components/schemas/AuthResponse'
               examples:
                 created:
                   value:
@@ -976,14 +1573,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required: [email, password]
-              properties:
-                email:
-                  type: string
-                password:
-                  type: string
-                  format: password
+              $ref: '#/components/schemas/AuthRequest'
             examples:
               login:
                 value:
@@ -995,18 +1585,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  uid:
-                    type: string
-                  email:
-                    type: string
-                  role:
-                    type: string
-                  ownerId:
-                    type: string
-                  token:
-                    type: string
+                $ref: '#/components/schemas/AuthResponse'
               examples:
                 ok:
                   value:
@@ -1167,7 +1746,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserProfile'
+              $ref: '#/components/schemas/UpdateMeRequest'
       responses:
         '200':
           description: OK
@@ -1200,24 +1779,10 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  ownerId:
-                    type: string
-                  cleared:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        entity:
-                          type: string
-                        model:
-                          type: string
-                        deletedCount:
-                          type: integer
+                $ref: '#/components/schemas/ClearOwnerDataResponse'
   /admin/users:
     get:
-      summary: Super admin list users (optionally filter by ownerEmail)
+      summary: Admin list users (optionally filter by ownerEmail)
       parameters:
         - in: query
           name: ownerEmail
@@ -1243,27 +1808,10 @@ paths:
           content:
             application/json:
               schema:
-                oneOf:
-                  - type: array
-                    items:
-                      $ref: '#/components/schemas/UserProfile'
-                  - type: object
-                    properties:
-                      items:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/UserProfile'
-                      page:
-                        type: integer
-                      limit:
-                        type: integer
-                      total:
-                        type: integer
-                      totalPages:
-                        type: integer
+                $ref: '#/components/schemas/PaginatedUsersResponse'
   /admin/users/search:
     get:
-      summary: Super admin user search by email or uid
+      summary: Admin user search by email or uid
       parameters:
         - in: query
           name: query
@@ -1289,24 +1837,7 @@ paths:
           content:
             application/json:
               schema:
-                oneOf:
-                  - type: array
-                    items:
-                      $ref: '#/components/schemas/UserProfile'
-                  - type: object
-                    properties:
-                      items:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/UserProfile'
-                      page:
-                        type: integer
-                      limit:
-                        type: integer
-                      total:
-                        type: integer
-                      totalPages:
-                        type: integer
+                $ref: '#/components/schemas/PaginatedUsersResponse'
   /admin/users/emails:
     get:
       summary: Admin list auth user emails (optional search)
@@ -1363,21 +1894,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  cleared:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        model:
-                          type: string
-                        deletedCount:
-                          type: integer
-                  skipped:
-                    type: array
-                    items:
-                      type: string
+                $ref: '#/components/schemas/ClearAllDataResponse'
   /admin/users/role:
     put:
       summary: Super admin update auth user role
@@ -1446,7 +1963,7 @@ paths:
                     type: string
   /admin/users/{uid}:
     put:
-      summary: Super admin upsert user profile
+      summary: Admin upsert user profile
       parameters:
         - in: path
           name: uid
@@ -1499,7 +2016,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaymentSettings'
     put:
-      summary: Update payment settings
+      summary: Admin update payment settings
       requestBody:
         required: true
         content:
@@ -1710,18 +2227,14 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required: [bill, source_table, target_table]
-              properties:
-                bill:
-                  $ref: '#/components/schemas/Bill'
-                source_table:
-                  $ref: '#/components/schemas/Table'
-                target_table:
-                  $ref: '#/components/schemas/Table'
+              $ref: '#/components/schemas/TableMoveRequest'
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableMoveResponse'
   /table-zones:
     get:
       summary: List table zones
@@ -2789,47 +3302,20 @@ paths:
                 items:
                   $ref: '#/components/schemas/StaffUser'
     post:
-      summary: Create staff auth account (owner or manager)
+      summary: Create staff auth account (owner or manager, role defaults to cashier)
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                email:
-                  type: string
-                password:
-                  type: string
-                role:
-                  type: string
-                  enum:
-                    - manager
-                    - cashier
-                name:
-                  type: string
-                permissions:
-                  type: string
-              required:
-                - email
-                - password
-                - role
+              $ref: '#/components/schemas/StaffCreateRequest'
       responses:
         '201':
           description: Created
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  uid:
-                    type: string
-                  email:
-                    type: string
-                  role:
-                    type: string
-                  ownerId:
-                    type: string
+                $ref: '#/components/schemas/StaffCreateResponse'
   /staff-users/{id}:
     put:
       summary: Upsert staff user
@@ -2845,6 +3331,25 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/StaffUser'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffUser'
+    delete:
+      summary: Delete staff user
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: ownerId
+          schema:
+            type: string
       responses:
         '200':
           description: OK
@@ -2871,6 +3376,10 @@ paths:
             type: string
         - in: query
           name: includeDeleted
+          schema:
+            type: boolean
+        - in: query
+          name: include_deleted
           schema:
             type: boolean
         - in: query
@@ -2908,7 +3417,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Expense'
+              $ref: '#/components/schemas/ExpenseWriteRequest'
       responses:
         '201':
           description: Created
@@ -2955,7 +3464,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Expense'
+              $ref: '#/components/schemas/ExpenseWriteRequest'
       responses:
         '200':
           description: OK
@@ -2987,19 +3496,4 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StaffUser'
-    delete:
-      summary: Delete staff user
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-        - in: query
-          name: ownerId
-          schema:
-            type: string
-      responses:
-        '200':
-          description: OK
+                $ref: '#/components/schemas/DeleteExpenseResponse'

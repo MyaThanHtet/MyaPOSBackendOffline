@@ -1,6 +1,6 @@
 # MyaPOS Backend
 
-Node.js REST API skeleton for a POS system using Express and MongoDB (Mongoose).
+Node.js REST API for a POS system using Express and SQLite.
 
 ## Quick start
 
@@ -8,14 +8,32 @@ Node.js REST API skeleton for a POS system using Express and MongoDB (Mongoose).
 2. Install dependencies: `npm install`
 3. Run in dev mode: `npm run dev`
 
+## Windows one-click setup
+
+Use this if users should run the server without opening an IDE/project.
+
+1. Copy this backend folder to the Windows laptop.
+2. Install Node.js 18+ once.
+3. Double-click `windows\install.bat` (first-time setup).
+4. Edit `.env` and set `JWT_SECRET`.
+5. Optional: set `FRONTEND_BUILD_DIR` in `.env` to your frontend `build/web` folder.
+6. Double-click one of these:
+   - `windows\start-server.bat` (backend only)
+   - `windows\start-pos.bat` (start backend and open browser at `http://localhost:3000`)
+
+Notes:
+- If `FRONTEND_BUILD_DIR` points to a valid `build/web` folder, backend will serve it at `/`.
+- Keep API base URL as `http://localhost:3000/api`.
+- For desktop convenience, create a shortcut to `windows\start-pos.bat`.
+
 ## Structure
 
-- `src/models`: Mongoose schemas
+- `src/models`: table descriptors
 - `src/controllers`: Request handling
 - `src/services`: Business logic
 - `src/routes`: API routes
 - `src/middleware`: Auth, error handling, logging
-- `src/config`: DB connection and environment variables
+- `src/config`: SQLite connection and environment variables
 - `src/repositories`: Data access layer
 
 ## Auth
@@ -29,7 +47,8 @@ Admin routes enforce `role`.
 
 ## Base path
 
-- `/api`
+- `/api` (main API)
+- `/db` and `/api/db` (SQLite REST adapter)
 
 ## OpenAPI
 
